@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Jekyll-DB : An easy way to use Jekyll and Github Pages as a "database"." />
+
+    <title>Jekyll-DB</title>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+    <script src="js/list.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <script src="js/papaparse.min.js"></script>
+    <script src="js/utils.js"></script>
+
+    <style>
+      /* On hover, change the color of the background to something slightly darker */
+      .table-striped > tbody > tr:hover > td {
+        background-color: #e5e5e5;
+      }
+      .table-striped > tbody > tr:hover:nth-child(2n+1) > td {
+        background-color: #e5e5e5;
+      }
+
+      .table-striped > thead > tr > th > span.sort.asc:after {
+        content: ' ▲'
+      }
+
+      .table-striped > thead > tr > th > span.sort.desc:after {
+        content: ' ▼'
+      }      
+
+      #individualWine {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div id="entry-list">
+        <div class="row" style="margin-bottom:10px;">
+          <input type="text" class="search form-control" placeholder="Search" />
+        </div>
+
+        <div class="row">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th style="width:5%;"><span class="sort" data-sort="numBottles"># of Bottles</span></th>
+                <th style="width:5%;"><span class="sort" data-sort="binLocations">Bin Locations</span></th>
+                <th style="width:10%;"><span class="sort" data-sort="winery">Winery</span></th>
+                <th style="width:10%;"><span class="sort" data-sort="varietal">Varietal</span></th>
+                <th style="width:10%;"><span class="sort" data-sort="vintage">Vintage</span></th>
+                <th style="width:10%;"><span class="sort" data-sort="wsRating">W.S. Rating</span></th>
+                <th style="width:10%;"><span class="sort" data-sort="status">Status</span></th>
+                <th style="width:10%;"><span class="sort" data-sort="issueReviewed">Issue Reviewed</span></th>
+                <th style="width:10%;"><span class="sort" data-sort="comments">Comments</span></th>
+              </tr>
+            </thead>
+            <tbody class="list" id="addEntriesToMe">
+
+            </tbody>
+          </table>
+        </div> <!-- /.container/#entry-list/.row -->
+      </div> <!-- /.container/#entry-list -->
+
+      <div id="individualWine">
+
+      </div> <!-- /.container/#individualWine-->
+
+      <script type="text/javascript">
+        IS_PRODUCTION = false
+        var valueNames = ['numBottles', 'binLocations', 'winery', 'varietal', 'vintage', 'wsRating', 'status', 'issueReviewed', 'comments']
+        var headerNames = ['# of Bottles', 'Bin Locations', 'Winery', 'Varietal', 'Vintage', 'W.S. Rating', 'Status', 'Issue Reviewed', 'Comments']
+        var allData = []
+
+        {
+          var winePage = document.getElementById('individualWine')
+          var form = document.createElement('form')
+          form.setAttribute('action', '#')
+          winePage.appendChild(form)
+
+          var hidden = document.createElement('input')
+          hidden.setAttribute('type', 'hidden')
+          hidden.setAttribute('id', 'rowIdElt')
+          form.appendChild(hidden)
+
+          for (var i = 0; i < headerNames.length; ++i) {
+            var group = document.createElement('div')
+            group.classList.add('form-group')
+            group.classList.add('col-sm-12')
+
+            var label = document.createElement('label')
+            label.setAttribute('for', valueNames[i] + 'Elt')
+            label.appendChild(document.createTextNode(headerNames[i]))
+
+            var div = document.createElement('div')
+            div.classList.add('input-group')
+            div.classList.add('col-sm-12')
+
+            var input = document.createElement('input')
+            input.setAttribute('type', 'text')
+            input.classList.add('form-control')
+            input.setAttribute('placeholder', headerNames[i])
+            input.setAttribute('id', valueNames[i] + 'Elt')
+
+            form.appendChild(group)
+            group.appendChild(label)
+            group.appendChild(div)
+            div.appendChild(input)
+          }
+
+          var button = document.createElement('button')
+          button.classList.add('btn', 'btn-default')
+          button.setAttribute('type', 'button')
+          button.appendChild(document.createTextNode('Submit'))
+          button.addEventListener('click', function(e) {
+            var rowId = parseInt(document.getElementById('rowIdElt').value)
+            var data = allData[rowId]
+            // Set data
+            for (var i = 0; i < headerNames.length; ++i) {
+              data[headerNames[i]] = document.getElementById(valueNames[i] + 'Elt').value
+            }
+            // Update interface
+            var tr = document.querySelector('tr[data-rowid="' + rowId + '"]')
+            for (var i = 0; i < headerNames.length; ++i) {
+              tr.querySelector('td.' + valueNames[i]).innerHTML = data[headerNames[i]]
+            }
+            if (IS_PRODUCTION) {
+              // Submit to Google here
+            }
+            showListPage()
+          })
+          form.appendChild(button)
+        }
+
+        var tbody = document.getElementById('addEntriesToMe')
+        var addRow = function(body, obj, rowId) {
+          var tr = document.createElement('tr')
+          if (rowId !== undefined) {
+            tr.setAttribute('data-rowid', rowId)
+            tr.addEventListener('click', function(e) {
+              showWinePage(this.getAttribute('data-rowid'))
+            })
+          }
+          for (var i = 0; i < valueNames.length; ++i) {
+            var valueName = valueNames[i]
+            var headerName = headerNames[i]
+            var td = document.createElement('td')
+            td.classList.add(valueName)
+            var textNode = document.createTextNode(obj[headerName])
+            td.appendChild(textNode)
+            tr.appendChild(td)
+          }
+          body.appendChild(tr)
+        }
+
+        var entryList = undefined
+        
+        if (!IS_PRODUCTION) {
+          // This grabs data from a CSV for testing
+          var rowNumberForParsing = 0
+          var data = Papa.parse('data/test.csv', {
+            download: true,
+            header: true,
+            step: function(row) {
+              addRow(tbody, row.data, rowNumberForParsing)
+              rowNumberForParsing++
+              allData.push(row.data)
+            },
+            complete: function() {
+              // Turn on list.js
+              entryList = new List('entry-list', { valueNames })
+            }
+          })
+        } else { // IS_PRODUCTION == true
+        
+          var parseRow = function(row, headers) {
+            var obj = {}
+            for (var i = 0; i < headers.length; ++i) {
+              obj[headers[i]] = row[i]
+            }
+            return obj
+          }
+
+          // This grabs data from the production database
+          getCORS('https://script.google.com/macros/s/AKfycbzOPoZU5qViLu2n7Osh3FJ1OWKlPLpYDfqphDCFhtMs6Ecc81pE/exec?action=getAll&sheet=Global', function(request) {
+            var data = request.currentTarget.response || request.target.responseText
+            var j = JSON.parse(data)
+            if (j.result == 'success') {
+              var headers = j.value[0]
+
+              for (var i = 1; i < j.value.length; ++i) {
+                var row = parseRow(j.value[i], headers, i - 1)
+                addRow(tbody, row)
+                allData.push(row)
+              }
+            }
+          })
+          
+        }
+
+        var showWinePage = function(rowId) {
+          var data = allData[rowId]
+          if (data === undefined) {
+            console.log('error')
+            return
+          }
+          for (var i = 0; i < headerNames.length; ++i) {
+            document.getElementById(valueNames[i] + 'Elt').value = data[headerNames[i]]
+            document.getElementById('rowIdElt').value = rowId
+          }
+          document.getElementById('entry-list').style.display = 'none'
+          document.getElementById('individualWine').style.display = 'block'
+        }
+
+        var showListPage = function() {
+          document.getElementById('entry-list').style.display = 'block'
+          document.getElementById('individualWine').style.display = 'none'
+        }
+      </script>
+
+  </div> <!-- /.container -->
+
+  </body>
