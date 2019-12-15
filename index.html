@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="George wine." />
 
-    <title>Jekyll-DB</title>
+    <title>George's Wines</title>
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 
@@ -25,9 +25,23 @@
       .table-striped > tbody > tr:hover > td {
         background-color: #e5e5e5;
       }
+
       .table-striped > tbody > tr:hover:nth-child(2n+1) > td {
         background-color: #e5e5e5;
       }
+
+      /* Hide extra columns on mobile */
+      td.collapsable, th.collapsable {
+        display: none;
+      }
+
+      @media only screen and (min-width: 450px) {
+        th.collapsable, td.collapsable {
+          display: table-cell;
+        }
+      }
+
+      /* End (Hide extra columns on mobile) */
 
       .table-striped > thead > tr > th > span.sort.asc:after {
         content: ' ▲'
@@ -44,12 +58,15 @@
       #individualWine {
         display: none;
       }
+      
     </style>
   </head>
 
   <body>
     <div class="container">
       <div id="entry-list">
+        <h3>All my wines</h3>
+
         <div class="row" style="margin-bottom:10px;">
           <input type="text" class="search form-control" placeholder="Search" />
         </div>
@@ -58,15 +75,16 @@
           <table class="table table-striped">
             <thead>
               <tr>
-                <th style="width:5%;"><span class="sort" data-sort="numBottles"># of Bottles</span></th>
-                <th style="width:5%;"><span class="sort" data-sort="binLocations">Bin Locations</span></th>
-                <th style="width:10%;"><span class="sort" data-sort="winery">Winery</span></th>
-                <th style="width:10%;"><span class="sort" data-sort="varietal">Varietal</span></th>
-                <th style="width:10%;"><span class="sort" data-sort="vintage">Vintage</span></th>
-                <th style="width:10%;"><span class="sort" data-sort="wsRating">W.S. Rating</span></th>
-                <th style="width:10%;"><span class="sort" data-sort="status">Status</span></th>
-                <th style="width:10%;"><span class="sort" data-sort="issueReviewed">Issue Reviewed</span></th>
-                <th style="width:10%;"><span class="sort" data-sort="comments">Comments</span></th>
+                <th><span class="sort" data-sort="numBottles"># of Bottles</span></th>
+                <th class="collapsable"><span class="sort" data-sort="binLocations">Bin Locations</span></th>
+                <th><span class="sort" data-sort="winery">Winery</span></th>
+                <th><span class="sort" data-sort="varietal">Varietal</span></th>
+                <th><span class="sort" data-sort="vintage">Vintage</span></th>
+                <th class="collapsable"><span class="sort" data-sort="wsRating">W.S. Rating</span></th>
+                <th class="collapsable"><span class="sort" data-sort="status">Status</span></th>
+                <th class="collapsable"><span class="sort" data-sort="issueReviewed">Issue Reviewed</span></th>
+                <th class="collapsable"><span class="sort" data-sort="klass">Class</span></th>
+                <th class="collapsable"><span class="sort" data-sort="comments">Comments</span></th>
               </tr>
             </thead>
             <tbody class="list" id="addEntriesToMe">
@@ -77,13 +95,13 @@
       </div> <!-- /.container/#entry-list -->
 
       <div id="individualWine">
-
+        <h3><button type="button" class="btn btn-default" onclick="showListPage()"><i class="glyphicon glyphicon-arrow-left"></i></button> Wine Details</h3>
       </div> <!-- /.container/#individualWine-->
 
       <script type="text/javascript">
-        IS_PRODUCTION = false
-        var valueNames = ['numBottles', 'binLocations', 'winery', 'varietal', 'vintage', 'wsRating', 'status', 'issueReviewed', 'comments']
-        var headerNames = ['# of Bottles', 'Bin Locations', 'Winery', 'Varietal', 'Vintage', 'W.S. Rating', 'Status', 'Issue Reviewed', 'Comments']
+        IS_PRODUCTION = true
+        var valueNames = ['numBottles', 'binLocations', 'winery', 'varietal', 'vintage', 'wsRating', 'status', 'issueReviewed', 'klass', 'comments']
+        var headerNames = ['# of Bottles', 'Bin Locations', 'Winery', 'Varietal', 'Vintage', 'W.S. Rating', 'Status', 'Issue Reviewed', 'Class', 'Comments']
         var allData = []
 
         {
@@ -100,7 +118,7 @@
           for (var i = 0; i < headerNames.length; ++i) {
             var group = document.createElement('div')
             group.classList.add('form-group')
-            group.classList.add('col-sm-12')
+            group.classList.add('col-xs-12')
 
             var label = document.createElement('label')
             label.setAttribute('for', valueNames[i] + 'Elt')
@@ -108,7 +126,7 @@
 
             var div = document.createElement('div')
             div.classList.add('input-group')
-            div.classList.add('col-sm-12')
+            div.classList.add('col-xs-12')
 
             var input = document.createElement('input')
             input.setAttribute('type', 'text')
@@ -125,7 +143,7 @@
           var button = document.createElement('button')
           button.classList.add('btn', 'btn-default')
           button.setAttribute('type', 'button')
-          button.appendChild(document.createTextNode('Submit'))
+          button.appendChild(document.createTextNode('Update'))
           button.addEventListener('click', function(e) {
             var rowId = parseInt(document.getElementById('rowIdElt').value)
             var data = allData[rowId]
@@ -160,6 +178,9 @@
             var headerName = headerNames[i]
             var td = document.createElement('td')
             td.classList.add(valueName)
+            if (i >= 5 || i == 1) {
+              td.classList.add('collapsable')
+            }
             var textNode = document.createTextNode(obj[headerName])
             td.appendChild(textNode)
             tr.appendChild(td)
@@ -172,13 +193,18 @@
         if (!IS_PRODUCTION) {
           // This grabs data from a CSV for testing
           var rowNumberForParsing = 0
+          var doneParsing = false
           var data = Papa.parse('data/test.csv', {
             download: true,
             header: true,
             step: function(row) {
-              addRow(tbody, row.data, rowNumberForParsing)
-              rowNumberForParsing++
-              allData.push(row.data)
+              if (!doneParsing && row.data['# of Bottles'] && String(row.data['# of Bottles']).trim().length > 0) {
+                addRow(tbody, row.data, rowNumberForParsing)
+                rowNumberForParsing++
+                allData.push(row.data)
+              } else {
+                doneParsing = true
+              }
             },
             complete: function() {
               // Turn on list.js
@@ -200,12 +226,16 @@
             var data = request.currentTarget.response || request.target.responseText
             var j = JSON.parse(data)
             if (j.result == 'success') {
-              var headers = j.value[0]
 
+              var doneParsing = false
               for (var i = 1; i < j.value.length; ++i) {
-                var row = parseRow(j.value[i], headers, i - 1)
-                addRow(tbody, row)
-                allData.push(row)
+                var row = parseRow(j.value[i], headerNames, i - 1)
+                if (!doneParsing && row['# of Bottles'] && String(row['# of Bottles']).trim().length > 0) {
+                  addRow(tbody, row, i - 1)
+                  allData.push(row)
+                } else {
+                  doneParsing = true
+                }
               }
             }
           })
@@ -227,8 +257,9 @@
         }
 
         var showListPage = function() {
-          document.getElementById('entry-list').style.display = 'block'
           document.getElementById('individualWine').style.display = 'none'
+
+          document.getElementById('entry-list').style.display = 'block'
         }
       </script>
 
