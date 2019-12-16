@@ -100,6 +100,7 @@
 
       <script type="text/javascript">
         IS_PRODUCTION = true
+        URL = 'https://script.google.com/macros/s/AKfycbzOPoZU5qViLu2n7Osh3FJ1OWKlPLpYDfqphDCFhtMs6Ecc81pE/exec'
         var valueNames = ['numBottles', 'binLocations', 'winery', 'varietal', 'vintage', 'wsRating', 'status', 'issueReviewed', 'klass', 'comments']
         var headerNames = ['# of Bottles', 'Bin Locations', 'Winery', 'Varietal', 'Vintage', 'W.S. Rating', 'Status', 'Issue Reviewed', 'Class', 'Comments']
         var allData = []
@@ -151,13 +152,26 @@
             for (var i = 0; i < headerNames.length; ++i) {
               data[headerNames[i]] = document.getElementById(valueNames[i] + 'Elt').value
             }
+
             // Update interface
             var tr = document.querySelector('tr[data-rowid="' + rowId + '"]')
             for (var i = 0; i < headerNames.length; ++i) {
               tr.querySelector('td.' + valueNames[i]).innerHTML = data[headerNames[i]]
             }
+
             if (IS_PRODUCTION) {
-              // Submit to Google here
+              // Ship off to gsheets
+              postCORS(
+                URL,
+                {
+                  'sheet': 'Global',
+                  'rowId': rowId,
+                  'row': headerNames.map(function(val) { return data[val] })
+                },
+                function(e) {
+                  console.log(e)
+                }
+              )
             }
             showListPage()
           })
@@ -222,7 +236,7 @@
           }
 
           // This grabs data from the production database
-          getCORS('https://script.google.com/macros/s/AKfycbzOPoZU5qViLu2n7Osh3FJ1OWKlPLpYDfqphDCFhtMs6Ecc81pE/exec?action=getAll&sheet=Global', function(request) {
+          getCORS(URL + '?action=getAll&sheet=Global', function(request) {
             var data = request.currentTarget.response || request.target.responseText
             var j = JSON.parse(data)
             if (j.result == 'success') {
@@ -230,7 +244,7 @@
               var doneParsing = false
               for (var i = 1; i < j.value.length; ++i) {
                 var row = parseRow(j.value[i], headerNames, i - 1)
-                if (!doneParsing && row['# of Bottles'] && String(row['# of Bottles']).trim().length > 0) {
+                if (!doneParsing && row['# of Bottles'] !== undefined && String(row['# of Bottles']).trim().length > 0) {
                   addRow(tbody, row, i - 1)
                   allData.push(row)
                 } else {
